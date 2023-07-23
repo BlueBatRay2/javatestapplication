@@ -169,6 +169,11 @@ Successful response will look something like this
 ```
 An unsuccessful response can possibly be a `409` error because of concurrency. The app will retry but eventually error out after retries have been exhausted.
 
+## Tests
+So at the moment tests are tricky to use as they are integration tests and require mongodb and NOT redis to be running.
+
+- First tests must be enabled, this is possible in the environment settings by adding environmental variable `RUN_TESTS` to `1` 
+- Second, caching must be disabled and this is simply because the way the tests are set up at the moment. This can be done in the application.properties file by setting `spring.cache.type=none`
 
 [OpenJDKCoretto]: https://img.shields.io/badge/AWS_Corretto-FFFFFF?style=for-the-badge&logo=openjdk&logoColor=black
 [OpenJDKCoretto-url]: https://aws.amazon.com/corretto/

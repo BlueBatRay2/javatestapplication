@@ -9,9 +9,6 @@ RUN gradle build
 # Second Stage
 FROM openjdk:17
 
-# Install vim todo remove after testing
-#RUN apt-get update && apt-get install -y vim
-
 EXPOSE 8080
 
 RUN mkdir /app

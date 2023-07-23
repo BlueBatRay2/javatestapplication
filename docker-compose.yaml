@@ -6,15 +6,22 @@ services:
       dockerfile: Dockerfile
     image: testapplication
     ports:
-      - 8080:8080
+      - "8080:8080"
     depends_on:
       - my-mongodb
+      - my-redis
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://my-mongodb:27017/test
+      - SPRING_REDIS_HOST=my-redis
     restart: unless-stopped
   my-mongodb:
     image: mongo
     volumes:
       - mongodb-data:/data/db
+  my-redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+
 volumes:
   mongodb-data:

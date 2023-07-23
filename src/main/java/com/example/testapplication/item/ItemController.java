@@ -32,7 +32,7 @@ public class ItemController {
                                                   @RequestParam OrderByType orderByType, @RequestParam OrderType orderType, //order by
                                                   @RequestParam int limit, @RequestParam int offset) { //pagination
         try {
-            return ResponseEntity.ok(itemServiceDao.searchitems(tags, filterValue, filterType, orderByType, orderType, limit, offset));
+            return ResponseEntity.ok(itemServiceDao.searchItems(tags, filterValue, filterType, orderByType, orderType, limit, offset));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

@@ -1,9 +1,11 @@
 package com.example.testapplication.item;
-
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -14,9 +16,11 @@ import java.util.UUID;
 public class ItemServiceDaoImpl implements ItemServiceDao {
 
     private final ItemRepository itemRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    public ItemServiceDaoImpl(ItemRepository itemRepository) {
+    public ItemServiceDaoImpl(ItemRepository itemRepository, RedisTemplate<String, Object> redisTemplate) {
         this.itemRepository = itemRepository;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -30,32 +34,38 @@ public class ItemServiceDaoImpl implements ItemServiceDao {
     }
 
     @Override
+    @Cacheable(value = "items", key = "#id", unless = "#result == null")
     public Item getItem(String id) {
         return itemRepository.findById(id).orElse(null);
     }
 
     @Override
-    public List<Item> searchitems(List<String> tags, int filterValue, FilterValueType filterType, OrderByType orderByType, OrderType orderType, int limit,  int offset) {
+    public List<Item> searchItems(List<String> tags, int filterValue, FilterValueType filterType, OrderByType orderByType, OrderType orderType, int limit, int offset) {
+        String key = tags.toString() + filterValue + filterType.name() + orderByType.name() + orderType.name() + limit + offset;
+        List<Item> items = (List<Item>) redisTemplate.opsForValue().get(key);
+        if (items != null) {
+            return items; // return cached value if present
+        }
 
-        Sort sort = Sort.by(orderType.toString());
-        sort = OrderType.ASCENDING.equals(orderType)? sort.ascending():sort.descending();
+        Sort sort = Sort.by(orderByType.toString());
+        sort = OrderType.ASCENDING.equals(orderType) ? sort.ascending() : sort.descending();
 
         Pageable pageable = PageRequest.of(offset, limit, sort);
 
-        return switch (filterType) {
+        items = switch (filterType) {
             case GREATER_THAN -> itemRepository.findItemsByTagsWithValueGreaterThan(tags, filterValue, pageable);
             case LESS_THAN -> itemRepository.findItemsByTagsWithValueLessThan(tags, filterValue, pageable);
             case EQUALS -> itemRepository.findItemsByTagsWithValue(tags, filterValue, pageable);
             case NONE -> itemRepository.findByTagsIn(tags, pageable);
         };
+
+        redisTemplate.opsForValue().set(key, items); // cache the result
+
+        return items;
     }
 
-    /*
-    The idea here is we will try to update. We will query the item then check it's version vs it's future version.
-    If there's another thread that entered in and did it first, the second thread version check will fail, and so we
-    retry.
-     */
     @Override
+    @CacheEvict(value = {"items", "searchItems"}, allEntries = true)
     public Item updateItem(String id, int newValue) {
 
         final int MAX_RETRIES = 50;
@@ -86,6 +96,7 @@ public class ItemServiceDaoImpl implements ItemServiceDao {
 
 
     @Override
+    @CacheEvict(value = {"items", "searchItems"}, allEntries = true)
     public void deleteItem(String id) {
         itemRepository.deleteById(id);
     }

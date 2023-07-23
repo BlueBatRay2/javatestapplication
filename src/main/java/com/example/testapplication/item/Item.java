@@ -26,6 +26,10 @@ public class Item implements Serializable {
     @Version
     private Long version; //used by db for concurrency, db updates
 
+    //required for redis
+    public Item(){
+
+    }
     public Item(String id, long creationTime, long lastUpdatedTime, int value, List<String> tags) {
         this.id = id;
         this.creationTime = creationTime;
