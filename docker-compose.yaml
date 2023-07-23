@@ -1,0 +1,20 @@
+version: '3'
+services:
+  my-spring-boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: testapplication
+    ports:
+      - 8080:8080
+    depends_on:
+      - my-mongodb
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://my-mongodb:27017/test
+    restart: unless-stopped
+  my-mongodb:
+    image: mongo
+    volumes:
+      - mongodb-data:/data/db
+volumes:
+  mongodb-data:
